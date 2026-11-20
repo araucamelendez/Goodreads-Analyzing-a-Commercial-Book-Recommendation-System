@@ -1,0 +1,357 @@
+---
+title: "Goodreads: Analyzing a Commercial Book Recommendation System"
+subtitle: "DATA 607 — Discussion 11: Research Assignment"
+author: "Arauca I. Melendez"
+date: "November 20, 2026"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: show
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Introduction
+
+Choosing the next book can be harder than it sounds. Readers may have thousands of books to choose from, and a book that is popular with other people is not necessarily a good fit for a particular reader. Goodreads addresses this discovery problem by combining book information with reader activity, such as ratings, shelves, and reviews.
+
+This report examines Goodreads as a commercial recommender system. The main research question is:
+
+**How does Goodreads use reader preferences, ratings, reading history, and community activity to recommend books, and how could its recommendation system be improved?**
+
+The report uses Scenario Design to consider both the organization's goals and the reader's goals. It then reverse-engineers the recommendation approach using publicly available Goodreads information and research about book recommendation systems. Since Goodreads does not publish the complete details of its current recommendation algorithm, this report separates documented facts from reasonable inferences.
+
+# Overview of Goodreads
+
+Goodreads is a social platform for readers. Members can keep track of books they have read, books they want to read, and books they are currently reading. They can rate books, write reviews, create shelves, follow other readers, and discover titles.
+
+Recommendations are useful because they help readers move from a large catalog of books to a smaller group of titles that may match their interests. Goodreads has described its recommendation system as using information about both books and the people who read them. In a 2011 announcement, Goodreads explained that its engine examined connections between books that appeared on the same shelves and whether readers enjoyed those books (Goodreads, 2011).
+
+Goodreads' recommendation help information has also described several ways readers can improve recommendations: rating more books, updating favorite genres, organizing books into shelves, and marking recommendations as "not interested" (Goodreads Help, n.d.). These are useful clues about the information that can influence personalization. Because some available help pages may reflect earlier versions of the site, I treat them as documented product guidance rather than proof that every detail of the current interface is unchanged.
+
+# Scenario Design
+
+Bruce D. Temkin's Scenario Design approach asks organizations to consider three questions: **Who are the target users? What are their key goals? How can the organization help them accomplish those goals?** The approach shifts attention away from simply adding features and toward understanding the experience from the customer's point of view (Forrester, 2004).
+
+It makes sense to apply the framework twice in this case. Goodreads has organizational goals, but readers use the platform for their own reasons. The two perspectives overlap, but they are not identical.
+
+## Scenario Design: Goodreads as the organization
+
+### Question 1: Who are the target users?
+
+Goodreads serves several groups:
+
+- Casual readers who want to keep track of books and find something enjoyable to read next.
+- Frequent readers who maintain detailed reading histories and want more personalized suggestions.
+- Readers exploring unfamiliar genres, authors, or subjects.
+- Readers who use ratings, reviews, and friends' activity to help make decisions.
+- Authors and publishers who want readers to discover their books.
+
+For this analysis, the primary target user is an active Goodreads member who rates books and maintains reading shelves.
+
+### Question 2: What are the organization's key goals?
+
+Goodreads' likely goals include:
+
+1. Help readers discover books that match their interests.
+2. Encourage members to rate, review, shelve, and discuss books.
+3. Make the platform useful enough that readers return regularly.
+4. Increase discovery of books across a broad catalog, not only the most popular titles.
+5. Strengthen the value of Goodreads as a reading community.
+
+These goals are based on Goodreads' public description of its mission and recommendation features. They should be understood as an analysis of likely business and product goals, not as an internal statement of current company strategy.
+
+### Question 3: How can Goodreads help users accomplish their goals?
+
+Goodreads can support readers by making it easy to:
+
+- Rate books they have read.
+- Add books to shelves such as "Read," "Currently Reading," and "Want to Read."
+- Create custom shelves that reflect more specific interests.
+- Set favorite genres.
+- Review suggested books and provide negative feedback when a recommendation is not appealing.
+- Use ratings, reviews, and activity from other readers as additional information.
+
+The recommendation system can then use these signals to help narrow a large catalog into a more relevant selection. Goodreads' historical recommendation announcement specifically described relationships between books that appeared on the same bookshelves and books enjoyed by the same readers (Goodreads, 2011).
+
+## Scenario Design: The reader/customer perspective
+
+### Question 1: Who is the target user?
+
+A representative user is a reader who enjoys books but does not always know what to read next. This reader may enjoy several genres, have limited time to browse, and want recommendations that reflect personal taste rather than only bestseller lists.
+
+The reader may also have different interests at different times. For example, the same person might want a light romance one month and a serious historical novel the next month.
+
+### Question 2: What are the reader's key goals?
+
+The reader's goals may include:
+
+- Find a book that is likely to be enjoyable.
+- Discover authors and genres they have not tried before.
+- Avoid books that are too similar to titles they already read.
+- Find books that match a current mood or interest.
+- Make a decision without spending too much time searching.
+- Use other readers' opinions while still receiving recommendations that feel personal.
+
+The main goal is not simply to find a highly rated book. It is to find a book that fits the reader's individual interests and current needs.
+
+### Question 3: How can Goodreads help the reader accomplish those goals?
+
+Goodreads can help by using the reader's ratings, shelves, favorite genres, and feedback on recommendations. It can also show book information and community reviews so the reader can decide whether a suggestion is worth reading.
+
+For example, a reader who frequently rates historical fiction and literary fiction highly could receive suggestions connected to those interests. If the reader marks a suggested title as not interesting, that feedback can help reduce similar recommendations in the future, as described in Goodreads' recommendation help information (Goodreads Help, n.d.).
+
+A good experience should also allow the reader to explore something new. If the system only recommends books that closely resemble past reading choices, it may become repetitive.
+
+## Comparison of the two perspectives
+
+| Organization perspective | Reader perspective |
+|:--|:--|
+| Increase useful book discovery | Find a book worth reading |
+| Encourage ratings and shelf activity | Track reading and express preferences |
+| Build repeat platform use | Save time choosing books |
+| Support a large book catalog | Discover unfamiliar authors and genres |
+| Improve recommendation relevance | Receive suggestions that feel personal |
+
+The perspectives overlap because useful recommendations can benefit both Goodreads and its members. However, they can also conflict. For example, a platform may benefit from encouraging frequent engagement, while a reader may prefer a short, focused list of recommendations rather than endless browsing. A strong recommender should prioritize relevance and user trust instead of treating clicks as the only measure of success.
+
+# Reverse Engineering the Goodreads Recommendation System
+
+Reverse engineering in this report means using visible product features and public information to make an informed explanation of how the system may work. It does not mean that I have access to Goodreads' internal code, model, or current production data.
+
+## What can be observed or documented?
+
+Goodreads' public materials provide several clues:
+
+| Signal or feature | What it may tell the system |
+|:--|:--|
+| Star ratings | Whether a reader liked or disliked a book |
+| Read shelf | Which books the reader has completed |
+| Want-to-Read shelf | Which books the reader is considering |
+| Currently Reading shelf | What the reader is reading now |
+| Custom shelves | More specific categories and interests |
+| Favorite genres | Genres the reader has explicitly selected |
+| Not interested feedback | Books or patterns the reader wants to avoid |
+| Other readers' shelves and ratings | Relationships between books and reader communities |
+
+Goodreads' 2011 announcement described mapping connections between books based on how often books appeared on the same shelves and whether the same readers enjoyed them. This is evidence of a collaborative, behavior-based approach in the system described at that time (Goodreads, 2011).
+
+The help information also describes ratings, favorite genres, custom shelves, and negative recommendation feedback as ways to improve recommendations (Goodreads Help, n.d.).
+
+## Likely recommendation techniques
+
+Based on the public information, Goodreads' recommendation approach can be understood through several common recommender-system ideas. The descriptions below explain possible techniques; they are not claims that Goodreads currently uses a particular model or implementation.
+
+### Collaborative filtering
+
+Collaborative filtering uses patterns in the behavior of multiple users. For example, if many readers who enjoyed Book A also enjoyed Book B, Book B may be a useful suggestion for someone who liked Book A.
+
+Goodreads' historical explanation of connections between books and readers is consistent with this general idea. It is not enough information to identify the exact collaborative-filtering algorithm.
+
+### Item-to-item similarity
+
+An item-to-item approach compares books based on patterns of user interaction. In a book platform, the system might identify titles that are frequently read, shelved, or highly rated by the same readers.
+
+This can help a reader discover a book related to something they already enjoyed. However, similarity based only on co-occurrence may overlook differences in why people liked a book.
+
+### Content-based filtering
+
+Content-based filtering recommends items with characteristics similar to items a user previously liked. For books, useful characteristics could include genre, author, subject, language, publication period, and descriptive text.
+
+Goodreads publicly documents the use of favorite genres and custom shelves as recommendation inputs in its help information. That supports the idea that book categories and reader-stated interests can contribute to personalization. It does not establish exactly how those signals are weighted in the current system.
+
+### Hybrid recommendation
+
+A hybrid system combines more than one recommendation approach. For example, it could combine patterns from similar readers with book information such as genre and subject.
+
+A 2024 study examined collaborative, content-based, and hybrid approaches using Goodreads review data. The authors reported that their hybrid approach performed best in their experimental setting (Hui et al., 2024). This is evidence about that research experiment, not evidence that Goodreads itself uses the same model.
+
+## A small illustrative example in R
+
+The following example demonstrates the basic idea of item-to-item collaborative filtering using a small, invented user-book rating matrix. It is included to make the concept easier to understand. **These are fictional ratings and this is not Goodreads data or a reproduction of Goodreads' algorithm.**
+
+The rows represent readers and the columns represent books. A blank value means that the reader has not rated that book.
+
+```{r}
+# Create a small example of reader ratings.
+# The data are fictional and are only for demonstrating the idea.
+
+ratings <- matrix(
+  c(
+    5, 4,  NA, 5,  NA,
+    4, 5,  4,  NA, 3,
+    5, NA, 4,  4,  NA,
+    NA, 4, 5,  4,  5,
+    3, 4,  NA, 5,  4
+  ),
+  nrow = 5,
+  byrow = TRUE
+)
+
+rownames(ratings) <- paste0("Reader_", 1:5)
+colnames(ratings) <- c("Book_A", "Book_B", "Book_C", "Book_D", "Book_E")
+
+ratings
+```
+
+To compare books, the next chunk calculates cosine similarity using only readers who rated both books. Cosine similarity ranges from -1 to 1 in general, with larger positive values indicating more similar rating patterns.
+
+```{r}
+# Function to calculate cosine similarity between two books.
+cosine_similarity <- function(x, y) {
+  both_rated <- !is.na(x) & !is.na(y)
+
+  # Return NA if there are not enough shared ratings.
+  if (sum(both_rated) < 2) {
+    return(NA_real_)
+  }
+
+  x_shared <- x[both_rated]
+  y_shared <- y[both_rated]
+
+  numerator <- sum(x_shared * y_shared)
+  denominator <- sqrt(sum(x_shared^2)) * sqrt(sum(y_shared^2))
+
+  if (denominator == 0) {
+    return(NA_real_)
+  }
+
+  numerator / denominator
+}
+
+# Compare every book with every other book.
+book_names <- colnames(ratings)
+
+similarity_matrix <- matrix(
+  NA_real_,
+  nrow = length(book_names),
+  ncol = length(book_names),
+  dimnames = list(book_names, book_names)
+)
+
+for (i in seq_along(book_names)) {
+  for (j in seq_along(book_names)) {
+    similarity_matrix[i, j] <- cosine_similarity(
+      ratings[, i],
+      ratings[, j]
+    )
+  }
+}
+
+round(similarity_matrix, 2)
+```
+
+This similarity matrix shows which books have more similar rating patterns in the small example. A production system would need to handle sparse data, different numbers of ratings, rating biases, new users, new books, and many other issues. It might also use additional information beyond star ratings.
+
+For example, if a reader liked Book A, a simple item-to-item recommender could look for books with high similarity to Book A that the reader has not rated yet. A real system would need a more careful method for combining signals and ranking candidates.
+
+## What cannot be confirmed from public information?
+
+There are important limits to this reverse-engineering exercise:
+
+- Goodreads does not publicly disclose the complete source code or current production model.
+- Public descriptions do not reveal the exact weights assigned to ratings, shelves, genres, reviews, or other signals.
+- The 2011 recommendation announcement describes the system at that time. It should not be treated as a complete technical description of the system in 2026.
+- A research paper that uses Goodreads data to build a recommender does not prove that Goodreads uses that paper's model.
+- The recommendations a member sees may depend on account history, settings, and changes to the website.
+
+Goodreads also announced in December 2020 that it would stop issuing new public API developer keys and planned to retire the existing API tools. This limits the ability of outside researchers to access Goodreads data through the former public API (Goodreads, 2020). Researchers should use data only in ways allowed by platform policies and applicable privacy rules.
+
+# Recommendations for Improving Goodreads
+
+Based on the analysis, I would recommend the following improvements.
+
+## Add mood-based recommendations
+
+Genres are useful, but they do not always describe what a reader wants at a particular moment. A person who enjoys historical fiction may sometimes want a light, comforting story and at other times want something emotionally intense.
+
+Goodreads could allow readers to select a mood or reading intention, such as:
+
+- Comforting and feel-good
+- Romantic and lighthearted
+- Suspenseful and fast-paced
+- Thought-provoking
+- Dark and emotional
+- Cozy and atmospheric
+
+The system could combine this temporary preference with a reader's longer-term history. This would make recommendations more responsive to what the person wants right now.
+
+## Improve recommendation diversity
+
+A recommendation system can become repetitive if it continually suggests books that are very similar to a reader's previous choices. Goodreads could reserve part of the recommendation list for books from new authors, less familiar genres, independent publishers, or books outside the reader's usual patterns.
+
+This would help readers discover something different without removing the familiar recommendations they enjoy.
+
+## Give readers more control and clearer explanations
+
+Goodreads could explain why a book is being recommended. For example:
+
+- "Recommended because you enjoyed this author's other book."
+- "Readers who liked these titles also enjoyed this one."
+- "Suggested because you often rate historical fiction highly."
+
+Readers could also be given more detailed controls, such as temporarily reducing recommendations from a genre or asking for fewer books by authors they already know. Clear explanations and controls could increase trust and make feedback more useful.
+
+## Use review themes carefully
+
+Star ratings summarize an opinion, but they do not explain why a reader liked or disliked a book. Goodreads could use review text to identify themes such as writing style, pacing, character development, romance, setting, or emotional tone.
+
+For example, two readers might both rate a novel five stars, but one may love the writing while the other loves the romance. Review themes could help distinguish those preferences.
+
+This would require careful handling of review data, privacy, and the possibility that automated text analysis misunderstands sarcasm or context.
+
+## Address popularity bias and fairness
+
+Popular books have more ratings and interactions, which can make them easier for a recommender to identify. If the system relies too heavily on popularity, lesser-known books and authors may receive less exposure.
+
+Goodreads could monitor how often recommendations include books from different genres, publication periods, and levels of popularity. It could also evaluate whether books by less-visible authors are being overlooked.
+
+##  Evaluate recommendations using more than clicks
+
+A recommendation should not be considered successful only because a reader clicks on it. A click may reflect curiosity rather than genuine interest.
+
+Goodreads could evaluate recommendations using measures such as:
+
+- **Precision:** Of the books recommended, how many did the reader find relevant?
+- **Recall:** Of the books the reader would have liked, how many did the system successfully recommend?
+- **Diversity:** Do recommendations include a reasonable variety of books?
+- **Novelty:** Does the system introduce readers to books they may not already know?
+- **User satisfaction:** Do readers save, start, finish, or positively rate recommended books?
+
+These measures would provide a more complete picture of recommendation quality.
+
+#  Conclusion
+
+Goodreads is an interesting example of a commercial recommender system because book discovery is personal. Two readers can enjoy the same book for completely different reasons, and a reader's interests can change over time.
+
+Public information indicates that Goodreads has used reader ratings, shelves, and relationships among readers and books to support personalized recommendations. Its recommendation help information also points to favorite genres, custom shelves, and negative feedback as useful signals. However, the complete details of the current recommendation algorithm are not publicly available, so it would be inaccurate to claim that a specific technical model is definitely being used today.
+
+The Scenario Design analysis shows that Goodreads needs to consider both its own goals and the reader's goals. The organization benefits when readers discover books and participate in the community. Readers benefit when suggestions are relevant, diverse, and easy to evaluate.
+
+My main recommendation is for Goodreads to make recommendations more flexible and transparent. Mood-based suggestions, greater diversity, clearer explanations, and better feedback controls could help readers discover books that fit both their established interests and what they feel like reading at the moment. Ultimately, a successful recommendation system should help readers find their next favorite book, not simply show them more of what they have already seen.
+
+# References
+
+Forrester. (2004). *Forrester introduces a disciplined approach to customer experience*. https://www.forrester.com/press-newsroom/forrester-introduces-a-disciplined-approach-to-customer-experience/
+
+Goodreads. (2011, September 15). *Announcing Goodreads personalized recommendations*. Goodreads News & Interviews. https://www.goodreads.com/blog/show/303-announcing-goodreads-personalized-recommendations
+
+Goodreads. (2020, December 17). *Does Goodreads support the use of APIs?* Goodreads Help. https://help.goodreads.com/s/article/Does-Goodreads-support-the-use-of-APIs
+
+Goodreads Help. (n.d.). *Recommendations: How can I improve my recommendations?* Goodreads Help. https://www.goodreads.com/help
+
+Hui, L. C., Keikhosrokiani, P., Pourya Asl, M., Isomursu, M., & Oinas-Kukkonen, H. (2024). *Sentiment analysis and innovative recommender system: Enhancing Goodreads book discovery using hybrid collaborative and content based filtering*. https://doi.org/10.1007/978-3-031-59707-7_9
+
+Vaez Barenji, S., Parajuli, S., & Ekstrand, M. D. (2025). *User and recommender behavior over time: Contextualizing activity, effectiveness, diversity, and fairness in book recommendation*. arXiv. https://doi.org/10.48550/arXiv.2505.04518
+
+# Research Notes and Scope
+
+This report is a public-information analysis, not an audit of Goodreads' internal system. The technical example uses invented data and demonstrates one basic collaborative-filtering idea. It should not be interpreted as a reconstruction of Goodreads' production algorithm.
+
+A limitation of this analysis is that personalized recommendation screens can vary by account and may require a signed-in user. The public product descriptions and help information cited here provide evidence about documented recommendation inputs and controls, but they do not guarantee that every screen or control appears in the same way for every user today. Any account-specific interface observations should be recorded separately with the date they were observed.
+
